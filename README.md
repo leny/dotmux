@@ -1,5 +1,5 @@
 # dotmux
 
-> Dotfiles &amp; script for tmux
+> Dotfiles &amp; scripts for tmux
 
 * * *
