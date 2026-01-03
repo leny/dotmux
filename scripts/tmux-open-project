@@ -1,0 +1,14 @@
+#!/usr/bin/env fish
+
+# List all projects from WORKS_PATH (same logic as __tinit completion)
+set project (
+    for orga in (ls $WORKS_PATH)
+        for repo in (ls $WORKS_PATH/$orga)
+            echo "$orga/$repo"
+        end
+    end | fzf --prompt="Project: "
+)
+
+if test -n "$project"
+    tinit $project
+end
