@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+tmux list-sessions -F '#S' -f '#{?#{m:*_scratchpad,#{session_name}},0,1}' \
+  | awk 'BEGIN {ORS=" "} {printf "%s %c \"kill-session -t %s\" ", $1, 96+NR, $1}' \
+  | xargs tmux display-menu -T "Close session"
