@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+TMUX_ALERT_DIR="${TMUX_ALERT_DIR:-/tmp/tmux-alerts}"
+
+# Count alerts
+count=0
+if [[ -d "$TMUX_ALERT_DIR" ]]; then
+    for f in "$TMUX_ALERT_DIR"/*; do
+        [[ -f "$f" ]] && count=$((count + 1))
+    done
+fi
+
+if (( count > 0 )); then
+    alert_label="#[fg=yellow,bold]Show Alerts ($count)#[default]"
+else
+    alert_label="Show Alerts (0)"
+fi
+
+tmux display-menu -T 'Commands' \
+    'Switch session' 's' 'run-shell tmux-session-menu' \
+    'Open project…' 'o' 'popup -EE -w 120 -h 12 -y C -x C -T "Open project…" "tmux-open-project"' \
+    "$alert_label" 'a' 'run-shell tmux-alert-menu' \
+    'Close session' 'x' 'run-shell tmux-close-session-menu' \
+    '' '' '' \
+    'Toggle scratchpad' 't' 'if -F "#{m:*_scratchpad,#{session_name}}" { detach-client } { popup -E -w 50% -h 50% -y C -x C -d "#{pane_current_path}" "tmux new -A -s $(tmux display-message -p \"#S\")_scratchpad" }' \
+    '' '' '' \
+    'Lazygit' 'g' 'popup -E -w 66% -h 75% -y C -x C -T "Lazygit" -d "#{pane_current_path}" "lazygit --use-config-file=\"$HOME/.pwendok/lazygit/config.yml\""' \
+    'Yazi' 'f' 'popup -E -w 50% -h 66% -y C -x C -T "Yazi" -d "#{pane_current_path}" "tmux new-session yazi \\; set status off \\; set detach-on-destroy on"' \
+    '' '' '' \
+    'Claude' 'c' 'popup -E -w 66% -h 75% -y C -x C -T "Claude" -d "#{pane_current_path}" "claude -c"' \
+    'Codex' '' 'popup -E -w 66% -h 75% -y C -x C -T "Codex" -d "#{pane_current_path}" "codex"' \
+    '' '' '' \
+    'Split |' 'v' 'split-window -h -c "#{pane_current_path}"' \
+    'Split -' 'h' 'split-window -v -c "#{pane_current_path}"'
