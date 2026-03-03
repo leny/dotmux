@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+TMUX_ALERT_DIR="${TMUX_ALERT_DIR:-/tmp/tmux-alerts}"
+mkdir -p "$TMUX_ALERT_DIR"
+
+encode() { printf '%s' "$1" | sed 's|/|%2F|g'; }
+decode() { printf '%s' "$1" | sed 's|%2F|/|g'; }
+
+case "${1:-}" in
+    set)
+        session="${2:-$(tmux display-message -p '#S' 2>/dev/null)}"
+        [[ -n "$session" ]] || { echo "Error: no session name"; exit 1; }
+        date +%s > "$TMUX_ALERT_DIR/$(encode "$session")"
+        ;;
+    clear)
+        session="${2:-$(tmux display-message -p '#S' 2>/dev/null)}"
+        [[ -n "$session" ]] || { echo "Error: no session name"; exit 1; }
+        rm -f "$TMUX_ALERT_DIR/$(encode "$session")"
+        ;;
+    clear-all)
+        rm -f "$TMUX_ALERT_DIR"/*
+        ;;
+    pick)
+        # Called by tmux-alert-menu: clear alert + switch to session
+        encoded="${2:?}"
+        rm -f "$TMUX_ALERT_DIR/$encoded"
+        tmux switch-client -t "=$(decode "$encoded")"
+        ;;
+    *)
+        echo "Usage: tmux-alert {set|clear|clear-all|pick} [session-name]"; exit 1
+        ;;
+esac

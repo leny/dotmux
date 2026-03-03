@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+TMUX_ALERT_DIR="${TMUX_ALERT_DIR:-/tmp/tmux-alerts}"
+[[ -d "$TMUX_ALERT_DIR" ]] || exit 0
+
+now=$(date +%s)
+parts=()
+
+for f in "$TMUX_ALERT_DIR"/*; do
+    [[ -f "$f" ]] || continue
+    filename="${f##*/}"
+    session="${filename//%2F//}"
+    ts=$(<"$f")
+    [[ "$ts" =~ ^[0-9]+$ ]] || continue
+    elapsed=$(( now - ts ))
+    if (( elapsed < 60 )); then
+        age="${elapsed}s"
+    elif (( elapsed < 3600 )); then
+        age="$(( elapsed / 60 ))m"
+    else
+        age="$(( elapsed / 3600 ))h"
+    fi
+    parts+=("$session (${age})")
+done
+
+(( ${#parts[@]} )) || exit 0
+
+IFS=', '
+printf '⚡ %s ' "${parts[*]}"

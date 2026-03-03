@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+TMUX_ALERT_DIR="${TMUX_ALERT_DIR:-/tmp/tmux-alerts}"
+
+now=$(date +%s)
+menu_args=()
+count=0
+
+if [[ -d "$TMUX_ALERT_DIR" ]]; then
+    for f in "$TMUX_ALERT_DIR"/*; do
+        [[ -f "$f" ]] || continue
+        filename="${f##*/}"
+        session="${filename//%2F//}"
+        ts=$(<"$f")
+        [[ "$ts" =~ ^[0-9]+$ ]] || continue
+        elapsed=$(( now - ts ))
+        if (( elapsed < 60 )); then
+            age="${elapsed}s"
+        elif (( elapsed < 3600 )); then
+            age="$(( elapsed / 60 ))m"
+        else
+            age="$(( elapsed / 3600 ))h"
+        fi
+        menu_args+=("$session (${age})" "" "run-shell -b \"tmux-alert pick $filename\"")
+        count=$((count + 1))
+    done
+fi
+
+if (( count == 0 )); then
+    tmux display-message "No pending alerts"
+    exit 0
+fi
+
+menu_args+=('' '' '')
+menu_args+=('Clear all' '' 'run-shell -b "tmux-alert clear-all"')
+
+tmux display-menu -T 'Alerts' "${menu_args[@]}"
