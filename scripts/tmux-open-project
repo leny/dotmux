@@ -11,4 +11,5 @@ set project (
 
 if test -n "$project"
     tinit $project
+    and tmux switch-client -t $project
 end
