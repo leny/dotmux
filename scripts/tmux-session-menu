@@ -6,17 +6,32 @@ current_session=$(tmux display-message -p '#S')
 
 sessions=$(tmux list-sessions -F '#S' -f '#{?#{m:*_scratchpad,#{session_name}},0,1}')
 
-# macos/system always first, then the rest in their original order
+# macos/system always first, then the rest sorted (so scopes end up contiguous)
 ordered=$(
   {
     printf '%s\n' "$sessions" | grep -x 'macos/system'
-    printf '%s\n' "$sessions" | grep -vx 'macos/system'
+    printf '%s\n' "$sessions" | grep -vx 'macos/system' | sort
   } | sed '/^$/d'
 )
 
 menu_args=()
 n=0
+prev_scope=""
+first=1
 while IFS= read -r name; do
+  if [[ "$name" == */* ]]; then
+    scope="${name%%/*}"
+  else
+    scope=""
+  fi
+
+  # separator whenever the scope changes
+  if [[ $first -eq 0 && "$scope" != "$prev_scope" ]]; then
+    menu_args+=("")
+  fi
+  prev_scope="$scope"
+  first=0
+
   n=$((n + 1))
   key=$(printf "\\$(printf '%03o' $((96 + n)))")
 
@@ -27,7 +42,6 @@ while IFS= read -r name; do
   fi
 
   if [[ "$name" == */* ]]; then
-    scope="${name%%/*}"
     project="${name#*/}"
     label="${marker} #[fg=magenta]${scope}#[default]/#[fg=cyan]${project}#[default]"
   else
