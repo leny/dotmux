@@ -2,6 +2,39 @@
 
 # See https://qmacro.org/autodidactics/2021/08/12/session-switching-with-the-tmux-menu/
 
-tmux list-sessions -F '#S' -f '#{?#{m:*_scratchpad,#{session_name}},0,1}' \
-  | awk 'BEGIN {ORS=" "} {printf "%s %c \"switch-client -t %s\" ", $1, 96+NR, $1}' \
-  | xargs tmux display-menu -T "Switch-session"
+current_session=$(tmux display-message -p '#S')
+
+sessions=$(tmux list-sessions -F '#S' -f '#{?#{m:*_scratchpad,#{session_name}},0,1}')
+
+# macos/system always first, then the rest in their original order
+ordered=$(
+  {
+    printf '%s\n' "$sessions" | grep -x 'macos/system'
+    printf '%s\n' "$sessions" | grep -vx 'macos/system'
+  } | sed '/^$/d'
+)
+
+menu_args=()
+n=0
+while IFS= read -r name; do
+  n=$((n + 1))
+  key=$(printf "\\$(printf '%03o' $((96 + n)))")
+
+  if [[ "$name" == "$current_session" ]]; then
+    marker="⏵"
+  else
+    marker=" "
+  fi
+
+  if [[ "$name" == */* ]]; then
+    scope="${name%%/*}"
+    project="${name#*/}"
+    label="${marker} #[fg=magenta]${scope}#[default]/#[fg=cyan]${project}#[default]"
+  else
+    label="${marker} ${name}"
+  fi
+
+  menu_args+=("$label" "$key" "switch-client -t $name")
+done <<< "$ordered"
+
+tmux display-menu -T "Switch-session" "${menu_args[@]}"
