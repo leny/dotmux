@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Tracks whether a Claude Code session is actively working (between
+# UserPromptSubmit and Stop hooks), for display in tmux-session-menu.
+TMUX_WORK_DIR="${TMUX_WORK_DIR:-/tmp/tmux-work}"
+mkdir -p "$TMUX_WORK_DIR"
+
+encode() { printf '%s' "$1" | sed 's|/|%2F|g'; }
+
+case "${1:-}" in
+    start)
+        session="${2:-$(tmux display-message -p '#S' 2>/dev/null)}"
+        [[ -n "$session" ]] || { echo "Error: no session name"; exit 1; }
+        touch "$TMUX_WORK_DIR/$(encode "$session")"
+        ;;
+    stop)
+        session="${2:-$(tmux display-message -p '#S' 2>/dev/null)}"
+        [[ -n "$session" ]] || { echo "Error: no session name"; exit 1; }
+        rm -f "$TMUX_WORK_DIR/$(encode "$session")"
+        ;;
+    *)
+        echo "Usage: tmux-work {start|stop} [session-name]"; exit 1
+        ;;
+esac

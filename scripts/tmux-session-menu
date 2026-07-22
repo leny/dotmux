@@ -5,6 +5,7 @@
 current_session=$(tmux display-message -p '#S')
 
 TMUX_ALERT_DIR="${TMUX_ALERT_DIR:-/tmp/tmux-alerts}"
+TMUX_WORK_DIR="${TMUX_WORK_DIR:-/tmp/tmux-work}"
 
 sessions=$(tmux list-sessions -F '#S' -f '#{?#{m:*_scratchpad,#{session_name}},0,1}')
 
@@ -46,19 +47,31 @@ while IFS= read -r name; do
   alert_file="$TMUX_ALERT_DIR/$(printf '%s' "$name" | sed 's|/|%2F|g')"
   [[ -f "$alert_file" ]] && has_alert=1 || has_alert=0
 
+  work_file="$TMUX_WORK_DIR/$(printf '%s' "$name" | sed 's|/|%2F|g')"
+  [[ -f "$work_file" ]] && has_work=1 || has_work=0
+
+  # needs-attention alert takes priority over the working indicator
+  if [[ $has_alert -eq 1 ]]; then
+    status="#[fg=yellow]⁂"
+  elif [[ $has_work -eq 1 ]]; then
+    status="#[fg=green]※"
+  else
+    status=""
+  fi
+
   # tmux display-menu miscalculates item width past ~5 #[] style tags, silently
-  # truncating the line - so the alert tag must not add its own #[default] when
+  # truncating the line - so the status tag must not add its own #[default] when
   # a scope/project color tag immediately follows (it self-overrides instead)
   if [[ "$name" == */* ]]; then
     project="${name#*/}"
-    if [[ $has_alert -eq 1 ]]; then
-      label="${marker}#[fg=yellow]⁂ #[fg=magenta]${scope}#[default]/#[fg=cyan]${project}#[default]"
+    if [[ -n "$status" ]]; then
+      label="${marker}${status} #[fg=magenta]${scope}#[default]/#[fg=cyan]${project}#[default]"
     else
       label="${marker}  #[fg=magenta]${scope}#[default]/#[fg=cyan]${project}#[default]"
     fi
   else
-    if [[ $has_alert -eq 1 ]]; then
-      label="${marker}#[fg=yellow]⁂#[default] ${name}"
+    if [[ -n "$status" ]]; then
+      label="${marker}${status}#[default] ${name}"
     else
       label="${marker}  ${name}"
     fi
