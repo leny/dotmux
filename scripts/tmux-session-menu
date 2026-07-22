@@ -4,6 +4,8 @@
 
 current_session=$(tmux display-message -p '#S')
 
+TMUX_ALERT_DIR="${TMUX_ALERT_DIR:-/tmp/tmux-alerts}"
+
 sessions=$(tmux list-sessions -F '#S' -f '#{?#{m:*_scratchpad,#{session_name}},0,1}')
 
 # macos/system always first, then the rest sorted (so scopes end up contiguous)
@@ -41,11 +43,25 @@ while IFS= read -r name; do
     marker=" "
   fi
 
+  alert_file="$TMUX_ALERT_DIR/$(printf '%s' "$name" | sed 's|/|%2F|g')"
+  [[ -f "$alert_file" ]] && has_alert=1 || has_alert=0
+
+  # tmux display-menu miscalculates item width past ~5 #[] style tags, silently
+  # truncating the line - so the alert tag must not add its own #[default] when
+  # a scope/project color tag immediately follows (it self-overrides instead)
   if [[ "$name" == */* ]]; then
     project="${name#*/}"
-    label="${marker} #[fg=magenta]${scope}#[default]/#[fg=cyan]${project}#[default]"
+    if [[ $has_alert -eq 1 ]]; then
+      label="${marker}#[fg=yellow]⁂ #[fg=magenta]${scope}#[default]/#[fg=cyan]${project}#[default]"
+    else
+      label="${marker}  #[fg=magenta]${scope}#[default]/#[fg=cyan]${project}#[default]"
+    fi
   else
-    label="${marker} ${name}"
+    if [[ $has_alert -eq 1 ]]; then
+      label="${marker}#[fg=yellow]⁂#[default] ${name}"
+    else
+      label="${marker}  ${name}"
+    fi
   fi
 
   menu_args+=("$label" "$key" "switch-client -t $name")
