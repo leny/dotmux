@@ -19,7 +19,7 @@ tmux display-menu -T 'Commands' \
     '#[fg=cyan]⏵#[default] Switch session' 's' 'run-shell tmux-session-menu' \
     '#[fg=cyan]⏵#[default] Open project…' 'o' 'popup -EE -w 120 -h 12 -y C -x C -T "Open project…" "tmux-open-project"' \
     "$alert_label" 'a' 'run-shell tmux-alert-menu' \
-    '#[fg=red]✕#[default] Close session' 'x' 'run-shell tmux-close-session-menu' \
+    '#[fg=red]✕#[default] Close sessions…' 'x' 'popup -EE -w 60 -h 20 -y C -x C -T "Close sessions…" "tmux-close-session-menu"' \
     '' '' '' \
     '#[fg=magenta]※#[default] Toggle scratchpad' 't' 'if -F "#{m:*_scratchpad,#{session_name}}" { detach-client } { popup -E -w 50% -h 50% -y C -x C -d "#{pane_current_path}" "tmux new -A -s $(tmux display-message -p \"#S\")_scratchpad" }' \
     '' '' '' \

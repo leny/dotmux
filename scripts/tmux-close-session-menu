@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
-tmux list-sessions -F '#S' -f '#{?#{m:*_scratchpad,#{session_name}},0,1}' \
-  | awk 'BEGIN {ORS=" "} {printf "%s %c \"kill-session -t %s\" ", $1, 96+NR, $1}' \
-  | xargs tmux display-menu -T "Close session"
+sessions=$(tmux list-sessions -F '#S' -f '#{?#{m:*_scratchpad,#{session_name}},0,1}')
+
+selected=$(printf '%s\n' "$sessions" | fzf --multi --prompt="Close sessions> " --header="Tab: select · Enter: confirm · Esc: cancel")
+
+[[ -z "$selected" ]] && exit 0
+
+while IFS= read -r name; do
+  [[ -n "$name" ]] && tmux kill-session -t "$name"
+done <<< "$selected"
